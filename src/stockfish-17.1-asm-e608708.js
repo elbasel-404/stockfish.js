@@ -1,0 +1,1 @@
+../../../chess.com/assets-chess-engine/Stockfish/stockfish-17.1-asm-e608708.js
