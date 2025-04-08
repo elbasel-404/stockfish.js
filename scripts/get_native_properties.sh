@@ -26,6 +26,17 @@ check_znver_1_2() {
   [ "$vendor_id" = "AuthenticAMD" ] && [ "$cpu_family" = "23" ] && znver_1_2=true
 }
 
+# Set the file CPU loongarch64 architecture
+set_arch_loongarch64() {
+  if check_flags 'lasx'; then
+    true_arch='loongarch64-lasx'
+  elif check_flags 'lsx'; then
+    true_arch='lonngarch64-lsx'
+  else
+    true_arch='loongarch64'
+  fi
+}
+
 # Set the file CPU x86_64 architecture
 set_arch_x86_64() {
   if check_flags 'avx512vnni' 'avx512dq' 'avx512f' 'avx512bw' 'avx512vl'; then
@@ -43,6 +54,20 @@ set_arch_x86_64() {
   fi
 }
 
+set_arch_ppc_64() {
+  if $(grep -q -w "altivec" /proc/cpuinfo); then
+    power=$(grep -oP -m 1 'cpu\t+: POWER\K\d+' /proc/cpuinfo)
+    if [ "0$power" -gt 7 ]; then
+      # VSX started with POWER8
+      true_arch='ppc-64-vsx'
+    else
+      true_arch='ppc-64-altivec'
+    fi
+  else
+    true_arch='ppc-64'
+  fi
+}
+
 # Check the system type
 uname_s=$(uname -s)
 uname_m=$(uname -m)
@@ -51,7 +76,7 @@ case $uname_s in
     case $uname_m in
       'arm64')
         true_arch='apple-silicon'
-        file_arch='x86-64-sse41-popcnt' # Supported by Rosetta 2
+        file_arch='m1-apple-silicon'
         ;;
       'x86_64')
         flags=$(sysctl -n machdep.cpu.features machdep.cpu.leaf7_features | tr '\n' ' ' | tr '[:upper:]' '[:lower:]' | tr -d '_.')
@@ -76,6 +101,10 @@ case $uname_s in
         file_os='ubuntu'
         true_arch='x86-32'
         ;;
+      'ppc64'*)
+        file_os='ubuntu'
+        set_arch_ppc_64
+        ;;
       'aarch64')
         file_os='android'
         true_arch='armv8'
@@ -89,6 +118,10 @@ case $uname_s in
         if check_flags 'neon'; then
           true_arch="$true_arch-neon"
         fi
+        ;;
+      'loongarch64'*)
+        file_os='linux'
+        set_arch_loongarch64
         ;;
       *) # Unsupported machine type, exit with error
         printf 'Unsupported machine type: %s\n' "$uname_m"
