@@ -221,6 +221,12 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
     }
 }
 
+#ifdef __EMSCRIPTEN__
+bool Engine::validate_position() const {
+    return pos.pos_is_ok();
+}
+#endif
+
 // modifiers
 
 void Engine::set_numa_config_from_option(const std::string& o) {

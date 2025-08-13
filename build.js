@@ -827,6 +827,7 @@ if (params["single-threaded"]) {
 if (params["debug-wasm"]) {
     if (buildWithEmscripten) {
         args.push("WASM_DEBUG=yes");
+        args.push("debug=yes");
         try {
             fs.unlinkSync(stockfishWASMPath + ".map");
         } catch (e) {}

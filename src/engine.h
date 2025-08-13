@@ -66,6 +66,9 @@ class Engine {
     void wait_for_search_finished();
     // set a new position, moves are in UCI format
     void set_position(const std::string& fen, const std::vector<std::string>& moves);
+#ifdef __EMSCRIPTEN__
+    bool validate_position() const;
+#endif
 
     // modifiers
 

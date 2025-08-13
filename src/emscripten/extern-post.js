@@ -11,8 +11,10 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
     {
         var isNode = typeof global !== "undefined" && Object.prototype.toString.call(global.process) === "[object process]";
         var engine = {};
+        var startUpQueue = [];
         var queue = [];
         var wasmPath;
+        var queueTimer;
         
         function completer(line)
         {
@@ -20,17 +22,15 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
                 "compiler",
                 "d",
                 "eval",
-                "exit",
                 "flip",
                 "go ",
-                "isready ",
-                "ponderhit ",
+                "isready",
+                "ponderhit",
                 "position fen ",
                 "position startpos",
-                "position startpos moves",
+                "position startpos moves ",
                 "quit",
                 "setoption name Clear Hash value true",
-                "setoption name Contempt value ",
                 "setoption name Hash value ",
                 "setoption name Minimum Thinking Time value ",
                 "setoption name Move Overhead value ",
@@ -74,7 +74,7 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
             
             function filter(c)
             {
-                return c.indexOf(line) === 0;
+                return c.toLowerCase().indexOf(line.toLowerCase()) === 0;
             }
             
             /// This looks for completions starting at the very beginning of the line.
@@ -96,9 +96,86 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
             return [hits, line];
         }
         
+        function sendCommand(cmd)
+        {
+            ///NOTE: The single-threaded engine needs to specifiy async for "go" commands to prevent memory leaks and other errors.
+            engine.ccall("command", null, ["string"], [cmd], {async: typeof IS_ASYNCIFY !== "undefined" && /^go\b/.test(cmd)});
+            ///NOTE: The engine must be fully initialized before we can close the Pthreads. so we have to check this here, not in onmessage.sendCommand
+            if (cmd === "quit") {
+                /// Close the Pthreads.
+                try {
+                    engine.terminate();
+                } catch (e) {}
+                try {
+                    self.close();
+                } catch (e) {}
+                try {
+                    process.exit();
+                } catch (e) {}
+            }
+            return true;
+        }
+        
+        function processQueue()
+        {
+            while (queue.length && (!engine._isSearching || !engine._isSearching())) {
+                sendCommand(queue.shift());
+            }
+        }
+        
+        function processCommand(cmd)
+        {
+            cmd = cmd.trim();
+            /// Certain commands need to be blocked.
+            if (cmd.substring(0, 2) === "go" || cmd.substring(0, 9) === "setoption") {
+                queue.push(cmd);
+            } else {
+                sendCommand(cmd);
+            }
+            processQueue();
+        }
+        
+        function processStartUpQueue()
+        {
+            var i = 0;
+            (function loop()
+            {
+                var cmd;
+                while (i < startUpQueue.length) {
+                    cmd = startUpQueue[i++];
+                    if (cmd.startsWith("sleep ")) {
+                        return setTimeout(loop, cmd.slice(6));
+                    } else {
+                        processCommand(cmd);
+                    }
+                }
+            }());
+        }
+        
+        function checkIfReady()
+        {
+            if (engine._isReady && !engine._isReady()) {
+                return setTimeout(checkIfReady, 10);
+            }
+            
+            if (typeof IS_ASYNCIFY === "undefined") {
+                engine.onDoneSearching = processQueue;
+            } else {
+                engine.onDoneSearching = function ()
+                {
+                    /// The delay is only necessary for the single-threaded engine.
+                    setTimeout(processQueue, 1);
+                };
+            }
+            engine.processCommand = processCommand;
+            if (startUpQueue.length) {
+                processStartUpQueue();
+            }
+        }
+        
         if (isNode) {
-            ///NOTE: Node.js v14-19 needs --experimental-wasm-threads --experimental-wasm-simd
             /// Was it called directly?
+            ///NOTE: Node.js v14-19 needs --experimental-wasm-threads --experimental-wasm-simd
             if (require.main === module) {
                 (function ()
                 {
@@ -146,24 +223,10 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
                     }
                 }());
                 
+                startUpQueue = process.argv.slice(2);
+                
                 Stockfish = INIT_ENGINE();
-                Stockfish(engine).then(function checkIfReady()
-                {
-                    if (engine._isReady) {
-                        if (!engine._isReady()) {
-                            return setTimeout(checkIfReady, 10);
-                        }
-                        delete engine._isReady;
-                    }
-                    engine.sendCommand = function (cmd)
-                    {
-                        ///NOTE: The single-threaded engine needs to specifiy async for "go" commands to prevent memory leaks and other errors.
-                        engine.ccall("command", null, ["string"], [cmd], {async: typeof IS_ASYNCIFY !== "undefined" && /^go\b/.test(cmd)});
-                    };
-                    
-                    queue.forEach(engine.sendCommand);
-                    queue = null;
-                });
+                Stockfish(engine).then(checkIfReady);
                 
                 require("readline").createInterface({
                     input: process.stdin,
@@ -173,12 +236,12 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
                 }).on("line", function online(cmd)
                 {
                     if (cmd) {
-                        if (engine.sendCommand) {
-                            engine.sendCommand(cmd);
+                        if (engine.processCommand) {
+                            engine.processCommand(cmd);
                         } else {
-                            queue.push(cmd);
+                            startUpQueue.push(cmd);
                         }
-                        if (cmd === "quit" || cmd === "exit") {
+                        if (cmd === "quit") {
                             process.exit();
                         }
                     }
@@ -224,7 +287,7 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
                                 ++doneCount;
                                 parts[num] = data;
                                 if (doneCount === total) {
-                                    wasmBlob = URL.createObjectURL(new Blob(parts));
+                                    wasmBlob = URL.createObjectURL(new Blob(parts, {type: "application/wasm"}));
                                     onLoaded(wasmBlob);
                                 }
                             };
@@ -266,30 +329,7 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
                     }
                     Stockfish = INIT_ENGINE();
                 
-                    Stockfish(engine).then(function checkIfReady()
-                    {
-                        if (engine._isReady) {
-                            if (!engine._isReady()) {
-                                return setTimeout(checkIfReady, 10);
-                            }
-                            delete engine._isReady;
-                        }
-                        
-                        engine.sendCommand = function (cmd)
-                        {
-                            ///NOTE: The single-threaded engine needs to specifiy async for "go" commands to prevent memory leaks and other errors.
-                            engine.ccall("command", null, ["string"], [cmd], {async: typeof IS_ASYNCIFY !== "undefined" && /^go\b/.test(cmd)});
-                            ///NOTE: The engine must be fully initialized before we can close the Pthreads. so we have to check this here, not in onmessage.
-                            if (cmd === "quit" || cmd === "exit") {
-                                /// Close the Pthreads.
-                                try {
-                                    engine.terminate();
-                                } catch (e) {}
-                            }
-                        };
-                        queue.forEach(engine.sendCommand);
-                        queue = null;
-                    }).catch(function (e)
+                    Stockfish(engine).then(checkIfReady).catch(function (e)
                     {
                         /// Sadly, Web Workers will not trigger the error event when errors occur in promises, so we need to create a new context and throw an error there.
                         setTimeout(function throwError()
@@ -303,13 +343,13 @@ if (typeof self !== "undefined" && self.location.hash.split(",")[1] === "worker"
                 if (!onmessage) {
                     onmessage = function (event)
                     {
-                        if (engine.sendCommand) {
-                            engine.sendCommand(event.data);
+                        if (engine.processCommand) {
+                            engine.processCommand(event.data);
                         } else {
-                            queue.push(event.data);
+                            startUpQueue.push(event.data);
                         }
-                        ///NOTE: We check this here, not just in engine.sendCommand, because the engine might never finish loading.
-                        if (event.data === "quit" || event.data === "exit") {
+                        ///NOTE: We check this here, not just in engine.processCommand, because the engine might never finish loading.
+                        if (event.data === "quit") {
                             /// Exit the Web Worker.
                             try {
                                 self.close();

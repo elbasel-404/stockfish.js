@@ -39,6 +39,10 @@
 #include "types.h"
 #include "ucioption.h"
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+#endif
+
 namespace Stockfish {
 
 constexpr auto BenchmarkCommand = "speedtest";
@@ -86,6 +90,7 @@ void UCIEngine::init_search_update_listeners() {
 }
 
 #ifdef __EMSCRIPTEN__
+bool searching;
 void UCIEngine::process_command(std::string cmd)
 {
     std::string token;
@@ -136,6 +141,12 @@ void UCIEngine::loop() {
             // send info strings after the go command is sent for old GUIs and python-chess
             print_info_string(engine.numa_config_information_as_string());
             print_info_string(engine.thread_allocation_information_as_string());
+#else
+            if (!engine.validate_position()) {
+                sync_cout << "info depth 0 score cp 0" << sync_endl;
+                sync_cout << "bestmove (none)" << sync_endl;
+                return;
+            }
 #endif
             go(is);
         }
@@ -159,7 +170,15 @@ void UCIEngine::loop() {
         else if (token == "d")
             sync_cout << engine.visualize() << sync_endl;
         else if (token == "eval")
+        {
+#ifdef __EMSCRIPTEN__
+            if (!engine.validate_position()) {
+                sync_cout << "Final evaluation       +0.00 (white side) [invalid position]" << sync_endl;
+                return;
+            }
+#endif
             engine.trace_eval();
+        }
         else if (token == "compiler")
             sync_cout << compiler_info() << sync_endl;
 #ifndef __EMSCRIPTEN__
@@ -175,7 +194,6 @@ void UCIEngine::loop() {
 
             engine.save_network(files);
         }
-#endif
         else if (token == "--help" || token == "help" || token == "--license" || token == "license")
             sync_cout
               << "\nStockfish is a powerful chess engine for playing and analyzing."
@@ -185,7 +203,6 @@ void UCIEngine::loop() {
                  "\nFor any further information, visit https://github.com/official-stockfish/Stockfish#readme"
                  "\nor read the corresponding README.md and Copying.txt files distributed along with this program.\n"
               << sync_endl;
-#ifndef __EMSCRIPTEN__
         else if (!token.empty() && token[0] != '#')
             sync_cout << "Unknown command: '" << cmd << "'. Type help for more information."
                       << sync_endl;
@@ -239,8 +256,12 @@ void UCIEngine::go(std::istringstream& is) {
 
     if (limits.perft)
         perft(limits);
-    else
+    else {
+#ifdef __EMSCRIPTEN__
+        searching = true;
+#endif
         engine.go(limits);
+    }
 }
 
 void UCIEngine::bench(std::istream& args) {
@@ -655,7 +676,9 @@ void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     ss << " nodes " << info.nodes        //
        << " nps " << info.nps            //
        << " hashfull " << info.hashfull  //
+#ifndef __NO_SYZYGY__
        << " tbhits " << info.tbHits      //
+#endif
        << " time " << info.timeMs        //
        << " pv " << info.pv;             //
 
@@ -678,6 +701,21 @@ void UCIEngine::on_bestmove(std::string_view bestmove, std::string_view ponder) 
     if (!ponder.empty())
         std::cout << " ponder " << ponder;
     std::cout << sync_endl;
+#ifdef __EMSCRIPTEN__
+    searching = false;
+    MAIN_THREAD_ASYNC_EM_ASM({
+        try {
+            Module["onDoneSearching"]();
+        } catch (e) {};
+    });
+#endif
 }
+
+#ifdef __EMSCRIPTEN__
+extern "C" bool isSearching() {
+    return searching;
+}
+#endif
+
 
 }  // namespace Stockfish

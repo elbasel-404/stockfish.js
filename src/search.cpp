@@ -233,6 +233,7 @@ void Search::Worker::start_searching() {
         iterative_deepening();      // main thread start searching
     }
 
+#ifndef __EMSCRIPTEN__
     // When we reach the maximum depth, we can arrive here without a raise of
     // threads.stop. However, if we are pondering or in an infinite search,
     // the UCI protocol states that we shouldn't print the best move before the
@@ -240,6 +241,7 @@ void Search::Worker::start_searching() {
     // until the GUI sends one of those commands.
     while (!threads.stop && (main_manager()->ponder || limits.infinite))
     {}  // Busy wait for a stop or a ponder reset
+#endif
 
     // Stop the threads if not already stopped (also raise the stop if
     // "ponderhit" just reset threads.ponder)
