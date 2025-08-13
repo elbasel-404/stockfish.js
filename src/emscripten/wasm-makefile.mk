@@ -105,10 +105,10 @@ ifeq ($(WASM_SINGLE_THREADED),yes)
 	#EM_LDFLAGS  += --pre-js emscripten/pre-single-threaded.js
 	EM_LDFLAGS  += -s ASYNCIFY=1
 	EM_LDFLAGS  += -s ASYNCIFY_STACK_SIZE=10485760
-	EM_LDFLAGS  += -s EXPORTED_FUNCTIONS="['_main','_command']"
+	EM_LDFLAGS  += -s EXPORTED_FUNCTIONS="['_main','_command','_isSearching']"
 	EM_LDFLAGS  += --extern-pre-js emscripten/extern-pre-async.js
 else
-	EM_LDFLAGS  += -s EXPORTED_FUNCTIONS="['_main','_command','_isReady']"
+	EM_LDFLAGS  += -s EXPORTED_FUNCTIONS="['_main','_command','_isReady','_isSearching']"
 	#EM_LDFLAGS  += --extern-post-js emscripten/extern-post.js
 	EM_LDFLAGS  += -s PROXY_TO_PTHREAD
 	EM_LDFLAGS  += -s USE_PTHREADS=1

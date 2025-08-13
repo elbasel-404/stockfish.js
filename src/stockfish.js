@@ -1,1 +1,1 @@
-./stockfish-17.js
+./stockfish-17.1-8e4d048.js
