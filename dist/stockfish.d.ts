@@ -3,7 +3,7 @@
  * Provides async/await API over the existing callback-based system
  */
 import { EventEmitter } from 'events';
-import { StockfishEngineOptions, MoveInfo, SearchOptions, Position, EvaluationResult } from './types';
+import { StockfishEngineOptions, MoveInfo, SearchOptions, Position, EvaluationResult } from './types.js';
 export declare class StockfishEngine extends EventEmitter {
     private options;
     private engine;
@@ -57,6 +57,6 @@ export declare function createEngine(options?: StockfishEngineOptions): Promise<
  * Simple convenience function to get AI move from a position
  */
 export declare function getAiMove(fen: string, moves?: string[], searchOptions?: SearchOptions): Promise<MoveInfo>;
-export * from './types';
+export * from './types.js';
 export default StockfishEngine;
 //# sourceMappingURL=stockfish.d.ts.map

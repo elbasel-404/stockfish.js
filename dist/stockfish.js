@@ -392,6 +392,6 @@ export async function getAiMove(fen, moves = [], searchOptions = {}) {
         await engine.quit();
     }
 }
-export * from './types';
+export * from './types.js';
 export default StockfishEngine;
 //# sourceMappingURL=stockfish.js.map

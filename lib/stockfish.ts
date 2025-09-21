@@ -11,8 +11,8 @@ import {
   EngineInfo, 
   Position, 
   EvaluationResult 
-} from './types';
-import { loadEngine } from './load-engine';
+} from './types.js';
+import { loadEngine } from './load-engine.js';
 
 export class StockfishEngine extends EventEmitter {
   private engine: any = null;
@@ -446,5 +446,5 @@ export async function getAiMove(
   }
 }
 
-export * from './types';
+export * from './types.js';
 export default StockfishEngine;

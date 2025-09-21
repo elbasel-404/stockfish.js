@@ -32,6 +32,6 @@
  * await engine.quit();
  * ```
  */
-export { StockfishEngine, createEngine, getAiMove } from './stockfish';
-export { StockfishEngine as default } from './stockfish';
+export { StockfishEngine, createEngine, getAiMove } from './stockfish.js';
+export { StockfishEngine as default } from './stockfish.js';
 //# sourceMappingURL=index.js.map
