@@ -1,6 +1,6 @@
 {
   "name": "stockfish",
-  "description": "The Stockfish chess engine in Web Assembly (WASM)",
+  "description": "The Stockfish chess engine in Web Assembly (WASM) with modern TypeScript interface",
   "version": "17.1.0",
   "author": {
     "name": "Nathan Rugg",
@@ -13,17 +13,52 @@
     }
   ],
   "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "ts-jest": "^29.0.0"
+  },
   "keywords": [
-    "chess"
+    "chess",
+    "stockfish",
+    "typescript",
+    "async",
+    "await",
+    "engine"
   ],
   "repository": {
     "type": "git",
     "url": "git://github.com/nmrugg/stockfish.js"
   },
   "license": "GPL",
-  "main": "src/stockfish.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "examples/",
+    "lib/"
+  ],
   "bin": {
     "stockfishjs": "./stockfishjs"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "dev": "ts-node lib/index.ts",
+    "prepare": "npm run build"
   },
   "readmeFilename": "readme.md"
 }
