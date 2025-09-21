@@ -30,7 +30,9 @@
     "es-modules",
     "async",
     "await",
-    "engine"
+    "engine",
+    "wasm",
+    "webassembly"
   ],
   "repository": {
     "type": "git",
@@ -60,6 +62,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "dev": "ts-node --esm lib/index.ts",
+    "example:quick": "ts-node --esm examples/quick-test.ts",
+    "example:modern": "ts-node --esm examples/modern-example.ts",
     "prepare": "npm run build"
   },
   "readmeFilename": "readme.md"
