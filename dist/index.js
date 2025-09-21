@@ -1,4 +1,3 @@
-"use strict";
 /**
  * Stockfish.js - Modern TypeScript interface
  *
@@ -33,12 +32,6 @@
  * await engine.quit();
  * ```
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = exports.getAiMove = exports.createEngine = exports.StockfishEngine = void 0;
-var stockfish_1 = require("./stockfish");
-Object.defineProperty(exports, "StockfishEngine", { enumerable: true, get: function () { return stockfish_1.StockfishEngine; } });
-Object.defineProperty(exports, "createEngine", { enumerable: true, get: function () { return stockfish_1.createEngine; } });
-Object.defineProperty(exports, "getAiMove", { enumerable: true, get: function () { return stockfish_1.getAiMove; } });
-var stockfish_2 = require("./stockfish");
-Object.defineProperty(exports, "default", { enumerable: true, get: function () { return stockfish_2.StockfishEngine; } });
+export { StockfishEngine, createEngine, getAiMove } from './stockfish';
+export { StockfishEngine as default } from './stockfish';
 //# sourceMappingURL=index.js.map

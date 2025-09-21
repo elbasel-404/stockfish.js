@@ -1,52 +1,11 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.StockfishEngine = void 0;
-exports.createEngine = createEngine;
-exports.getAiMove = getAiMove;
 /**
  * Modern TypeScript interface for Stockfish chess engine
  * Provides async/await API over the existing callback-based system
  */
-const events_1 = require("events");
-const path = __importStar(require("path"));
-const load_engine_1 = require("./load-engine");
-class StockfishEngine extends events_1.EventEmitter {
+import { EventEmitter } from 'events';
+import * as path from 'path';
+import { loadEngine } from './load-engine';
+export class StockfishEngine extends EventEmitter {
     constructor(options = {}) {
         super();
         this.options = options;
@@ -85,7 +44,7 @@ class StockfishEngine extends events_1.EventEmitter {
                 const enginePath = this.options.enginePath ||
                     path.join(__dirname, '..', 'src', 'stockfish.js');
                 // Load the engine
-                this.engine = (0, load_engine_1.loadEngine)(enginePath);
+                this.engine = loadEngine(enginePath);
                 // Set up stream handler for real-time info
                 this.engine.stream = (line) => {
                     this.emit('data', line);
@@ -375,11 +334,10 @@ class StockfishEngine extends events_1.EventEmitter {
         this.emit('quit');
     }
 }
-exports.StockfishEngine = StockfishEngine;
 /**
  * Create and initialize a new Stockfish engine instance
  */
-async function createEngine(options = {}) {
+export async function createEngine(options = {}) {
     const engine = new StockfishEngine(options);
     await engine.init();
     return engine;
@@ -387,7 +345,7 @@ async function createEngine(options = {}) {
 /**
  * Simple convenience function to get AI move from a position
  */
-async function getAiMove(fen, moves = [], searchOptions = {}) {
+export async function getAiMove(fen, moves = [], searchOptions = {}) {
     const engine = new StockfishEngine();
     try {
         await engine.init();
@@ -398,6 +356,6 @@ async function getAiMove(fen, moves = [], searchOptions = {}) {
         await engine.quit();
     }
 }
-__exportStar(require("./types"), exports);
-exports.default = StockfishEngine;
+export * from './types';
+export default StockfishEngine;
 //# sourceMappingURL=stockfish.js.map
