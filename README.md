@@ -4,6 +4,24 @@
 
 Stockfish.js is currently updated to Stockfish 17.1.
 
+> 🆕 **NEW: TypeScript Support with Async/Await!**
+> 
+> This repository now includes a modern TypeScript interface with async/await support for easier integration. See the [TypeScript documentation](README-typescript.md) for details.
+
+```javascript
+// New async/await interface (recommended)
+const { getAiMove } = require('stockfish');
+
+const move = await getAiMove(
+  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  [],
+  { depth: 10 }
+);
+console.log(`Best move: ${move.move} (${move.score}cp)`);
+```
+
+## Engine Variants
+
 This edition of Stockfish.js comes in five flavors:
 
  * The large multi-threaded engine:
@@ -30,7 +48,47 @@ This edition of Stockfish.js comes in five flavors:
 
 The ASM-JS engine will run in essentially any browser/runtime that supports JavaScript. The WASM Stockfish.js 17.1 will run on all modern browsers (e.g., Chrome/Edge/Firefox/Opera/Safari) on supported system (Windows 10+/macOS 11+/iOS 16+/Linux/Android), as well as supported versions of Node.js. For slightly older browsers, see the <a href=../../tree/Stockfish16>Stockfish.js 16 branch</a>. For an engine that supports chess variants (like 3-check and Crazyhouse), see the <a href=../../tree/Stockfish11>Stockfish.js 11 branch</a>.
 
-### API
+## API
+
+### Modern TypeScript/JavaScript Interface (Recommended)
+
+```javascript
+const { createEngine, getAiMove } = require('stockfish');
+
+// Simple usage
+const move = await getAiMove(
+  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  ['e2e4', 'e7e5'],
+  { depth: 12 }
+);
+
+console.log(`Best move: ${move.move}`);
+console.log(`Evaluation: ${move.score} centipawns`);
+
+// Advanced usage
+const engine = await createEngine({
+  threads: 4,
+  hashSize: 128
+});
+
+engine.on('info', (info) => {
+  console.log(`Depth ${info.depth}: ${info.score}cp`);
+});
+
+await engine.setPosition({
+  fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  moves: ['e2e4']
+});
+
+const bestMove = await engine.getAiMove({ time: 5000 });
+console.log(`Best move: ${bestMove.move}`);
+
+await engine.quit();
+```
+
+For full TypeScript documentation and examples, see [README-typescript.md](README-typescript.md).
+
+### Legacy Callback Interface
 
 In the browser, it is recommended to use the engine via Web Workers. See `examples/loadEngine.js` for a sample implementation.
 
@@ -48,7 +106,27 @@ You need to have <a href="http://kripken.github.io/emscripten-site/docs/getting_
 
 There are examples in the examples folder. You will need to run the examples/server.js server to view the client-side examples. Then you can test out a simple interface at http://localhost:9091/ or a more complete demo at http://localhost:9091/demo.html.
 
-There are also examples of how to use Stockfish.js via Node.js.
+There are also examples of how to use Stockfish.js via Node.js:
+
+- `examples/typescript-example.ts` - Modern TypeScript interface
+- `examples/modern-javascript-example.js` - Modern JavaScript with async/await  
+- `examples/comprehensive-demo.js` - Full feature demonstration
+- `examples/node_abstraction.js` - Legacy callback interface
+- `examples/node_direct.js` - Direct engine communication
+
+### Testing
+
+Run the test suite:
+
+```bash
+npm test
+```
+
+Run a quick functionality test:
+
+```bash
+node examples/quick-test.js
+```
 
 ### Thanks
 
