@@ -64,7 +64,12 @@
     "dev": "ts-node --esm lib/index.ts",
     "example:quick": "ts-node --esm examples/quick-test.ts",
     "example:modern": "ts-node --esm examples/modern-example.ts",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "pack": "npm run build && npm pack",
+    "pack:test": "npm run pack && npm install -g ./stockfish-*.tgz",
+    "pack:clean": "rm -f stockfish-*.tgz && rm -rf temp-package-test",
+    "pack:local": "npm run build && npm pack && echo '\\n✅ Local package created: stockfish-*.tgz\\n📦 To test locally, run: npm install ./stockfish-*.tgz\\n🧹 To clean up, run: npm run pack:clean'",
+    "pack:verify": "npm run pack:local && node scripts/test-local-package.mjs && npm run pack:clean"
   },
   "readmeFilename": "readme.md"
 }

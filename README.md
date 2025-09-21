@@ -183,6 +183,26 @@ npm run build
 npm test
 ```
 
+## Local Package Testing
+
+For testing the package locally before publishing:
+
+```bash
+# Create a local npm package (.tgz file)
+npm run pack:local
+
+# Create and verify the package works correctly
+npm run pack:verify
+
+# Install the package globally for testing
+npm run pack:test
+
+# Clean up generated package files
+npm run pack:clean
+```
+
+The `pack:verify` script creates a temporary test environment, installs the local package, and verifies that all exports work correctly.
+
 ## Module Bundler Support
 
 This package is designed to work seamlessly with modern JavaScript bundlers:
