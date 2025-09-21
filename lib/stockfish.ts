@@ -11,8 +11,8 @@ import {
   EngineInfo, 
   Position, 
   EvaluationResult 
-} from './types';
-import { loadEngine } from './load-engine';
+} from './types.js';
+import { loadEngine } from './load-engine.js';
 
 export class StockfishEngine extends EventEmitter {
   private engine: any = null;
@@ -57,34 +57,70 @@ export class StockfishEngine extends EventEmitter {
       try {
         // Determine engine path
         const enginePath = this.options.enginePath || 
-          path.join(__dirname, '..', 'src', 'stockfish.js');
+          path.join(process.cwd(), 'src', 'stockfish.js');
         
-        // Load the engine
-        this.engine = loadEngine(enginePath);
-        
-        // Set up stream handler for real-time info
-        this.engine.stream = (line: string) => {
-          this.emit('data', line);
-          this._parseInfoLine(line);
-        };
-
-        // Wait for engine to be ready
-        this.engine.send('uci', () => {
-          this.engine.send('isready', async () => {
-            try {
-              // Configure engine options
-              await this._configureEngine();
-              
-              clearTimeout(timeout);
-              this.isInitialized = true;
-              this.emit('ready');
-              resolve();
-            } catch (error) {
-              clearTimeout(timeout);
-              reject(error);
-            }
+        // Load the engine - for now, try the built-in WASM module directly
+        // This is a temporary bridge until we fix the pure TS loader
+        if (typeof global !== "undefined" && typeof process !== "undefined") {
+          // Node.js environment - use the built-in Stockfish factory
+          const stockfishFactory = require(enginePath);
+          
+          stockfishFactory().then((engine: any) => {
+            this.engine = {
+              send: (cmd: string, cb?: (result: string) => void) => {
+                if (cb) {
+                  // Store callback and send command
+                  const originalListener = engine.listener;
+                  let responseBuffer = '';
+                  
+                  engine.listener = (line: string) => {
+                    responseBuffer += line + '\n';
+                    if (this.engine?.stream) {
+                      this.engine.stream(line);
+                    }
+                    
+                    // Determine if response is complete based on command
+                    let isComplete = false;
+                    if (cmd === 'uci' && line === 'uciok') {
+                      isComplete = true;
+                    } else if (cmd === 'isready' && line === 'readyok') {
+                      isComplete = true;
+                    } else if (cmd.startsWith('go') && line.startsWith('bestmove')) {
+                      isComplete = true;
+                    }
+                    
+                    if (isComplete) {
+                      engine.listener = originalListener;
+                      cb(responseBuffer.trim());
+                    }
+                  };
+                  
+                  engine.ccall('command', null, ['string'], [cmd]);
+                } else {
+                  engine.ccall('command', null, ['string'], [cmd]);
+                }
+              },
+              quit: () => {
+                try {
+                  engine.terminate();
+                } catch (e) {
+                  // Ignore termination errors
+                }
+              }
+            };
+            
+            clearTimeout(timeout);
+            this.isInitialized = true;
+            this.emit('ready');
+            resolve();
+          }).catch((error: any) => {
+            clearTimeout(timeout);
+            reject(error);
           });
-        });
+        } else {
+          // Browser environment
+          reject(new Error('Browser environment not yet implemented'));
+        }
       } catch (error) {
         clearTimeout(timeout);
         reject(error);
@@ -410,5 +446,5 @@ export async function getAiMove(
   }
 }
 
-export * from './types';
+export * from './types.js';
 export default StockfishEngine;

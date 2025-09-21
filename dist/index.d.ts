@@ -32,7 +32,7 @@
  * await engine.quit();
  * ```
  */
-export { StockfishEngine, createEngine, getAiMove } from './stockfish';
-export { StockfishEngineOptions, MoveInfo, SearchOptions, EngineInfo, Position, EvaluationResult } from './types';
-export { StockfishEngine as default } from './stockfish';
+export { StockfishEngine, createEngine, getAiMove } from './stockfish.js';
+export { StockfishEngineOptions, MoveInfo, SearchOptions, EngineInfo, Position, EvaluationResult } from './types.js';
+export { StockfishEngine as default } from './stockfish.js';
 //# sourceMappingURL=index.d.ts.map

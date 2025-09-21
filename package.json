@@ -2,6 +2,7 @@
   "name": "stockfish",
   "description": "The Stockfish chess engine in Web Assembly (WASM) with modern TypeScript interface",
   "version": "17.1.0",
+  "type": "module",
   "author": {
     "name": "Nathan Rugg",
     "email": "nmrugg@gmail.com"
@@ -25,9 +26,13 @@
     "chess",
     "stockfish",
     "typescript",
+    "esm",
+    "es-modules",
     "async",
     "await",
-    "engine"
+    "engine",
+    "wasm",
+    "webassembly"
   ],
   "repository": {
     "type": "git",
@@ -35,18 +40,17 @@
   },
   "license": "GPL",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
   "files": [
     "dist/",
     "src/",
-    "examples/",
     "lib/"
   ],
   "bin": {
@@ -57,8 +61,15 @@
     "build:watch": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
-    "dev": "ts-node lib/index.ts",
-    "prepare": "npm run build"
+    "dev": "ts-node --esm lib/index.ts",
+    "example:quick": "ts-node --esm examples/quick-test.ts",
+    "example:modern": "ts-node --esm examples/modern-example.ts",
+    "prepare": "npm run build",
+    "pack": "npm run build && npm pack",
+    "pack:test": "npm run pack && npm install -g ./stockfish-*.tgz",
+    "pack:clean": "rm -f stockfish-*.tgz && rm -rf temp-package-test",
+    "pack:local": "npm run build && npm pack && echo '\\n✅ Local package created: stockfish-*.tgz\\n📦 To test locally, run: npm install ./stockfish-*.tgz\\n🧹 To clean up, run: npm run pack:clean'",
+    "pack:verify": "npm run pack:local && node scripts/test-local-package.mjs && npm run pack:clean"
   },
   "readmeFilename": "readme.md"
 }

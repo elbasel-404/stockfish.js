@@ -37,7 +37,7 @@ export {
   StockfishEngine, 
   createEngine, 
   getAiMove 
-} from './stockfish';
+} from './stockfish.js';
 
 export {
   StockfishEngineOptions,
@@ -46,6 +46,6 @@ export {
   EngineInfo,
   Position,
   EvaluationResult
-} from './types';
+} from './types.js';
 
-export { StockfishEngine as default } from './stockfish';
+export { StockfishEngine as default } from './stockfish.js';

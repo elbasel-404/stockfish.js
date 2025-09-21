@@ -1,13 +1,13 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 
 /**
- * Quick test of the new TypeScript interface
+ * Quick test of the modern TypeScript interface using ES modules
  */
 
-const { getAiMove } = require('../dist/index');
+import { getAiMove } from '../dist/index.js';
 
-async function quickTest() {
-  console.log('Quick test of TypeScript interface...');
+async function quickTest(): Promise<boolean> {
+  console.log('Quick test of TypeScript interface (ES Modules)...');
   
   try {
     const move = await getAiMove(
@@ -22,15 +22,16 @@ async function quickTest() {
     console.log(`  Nodes: ${move.nodes}`);
     return true;
   } catch (error) {
-    console.error('✗ Error:', error.message);
+    console.error('✗ Error:', (error as Error).message);
     return false;
   }
 }
 
+// Handle command line execution
 if (require.main === module) {
   quickTest().then(success => {
     process.exit(success ? 0 : 1);
   });
 }
 
-module.exports = { quickTest };
+export { quickTest };

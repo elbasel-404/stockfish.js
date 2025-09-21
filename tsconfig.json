@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "CommonJS",
+    "module": "ESNext",
     "lib": ["ES2020", "DOM"],
     "outDir": "./dist",
     "rootDir": "./lib",
@@ -15,8 +15,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
