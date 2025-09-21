@@ -10,7 +10,7 @@ Stockfish.js is currently updated to Stockfish 17.1.
 
 ```javascript
 // New async/await interface (recommended)
-const { getAiMove } = require('stockfish');
+import { getAiMove } from 'stockfish';
 
 const move = await getAiMove(
   'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -53,7 +53,7 @@ The ASM-JS engine will run in essentially any browser/runtime that supports Java
 ### Modern TypeScript/JavaScript Interface (Recommended)
 
 ```javascript
-const { createEngine, getAiMove } = require('stockfish');
+import { createEngine, getAiMove } from 'stockfish';
 
 // Simple usage
 const move = await getAiMove(

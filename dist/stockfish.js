@@ -45,8 +45,7 @@ exports.getAiMove = getAiMove;
  */
 const events_1 = require("events");
 const path = __importStar(require("path"));
-// Import the existing loadEngine function
-const loadEngine = require('../examples/loadEngine.js');
+const load_engine_1 = require("./load-engine");
 class StockfishEngine extends events_1.EventEmitter {
     constructor(options = {}) {
         super();
@@ -86,7 +85,7 @@ class StockfishEngine extends events_1.EventEmitter {
                 const enginePath = this.options.enginePath ||
                     path.join(__dirname, '..', 'src', 'stockfish.js');
                 // Load the engine
-                this.engine = loadEngine(enginePath);
+                this.engine = (0, load_engine_1.loadEngine)(enginePath);
                 // Set up stream handler for real-time info
                 this.engine.stream = (line) => {
                     this.emit('data', line);

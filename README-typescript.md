@@ -24,9 +24,28 @@ npm install -D typescript @types/node
 
 ## Quick Start
 
-### JavaScript (ES6+)
+### JavaScript (ES6+) with CommonJS
 ```javascript
 const { getAiMove } = require('stockfish');
+
+async function main() {
+  // Get AI move from starting position
+  const move = await getAiMove(
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    [], // no moves played yet
+    { depth: 10 }
+  );
+  
+  console.log(`Best move: ${move.move}`);
+  console.log(`Evaluation: ${move.score} centipawns`);
+}
+
+main().catch(console.error);
+```
+
+### JavaScript (ES Modules)
+```javascript
+import { getAiMove } from 'stockfish';
 
 async function main() {
   // Get AI move from starting position

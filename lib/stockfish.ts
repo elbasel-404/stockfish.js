@@ -12,9 +12,7 @@ import {
   Position, 
   EvaluationResult 
 } from './types';
-
-// Import the existing loadEngine function
-const loadEngine = require('../examples/loadEngine.js');
+import { loadEngine } from './load-engine';
 
 export class StockfishEngine extends EventEmitter {
   private engine: any = null;
