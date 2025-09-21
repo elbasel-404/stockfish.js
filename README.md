@@ -50,6 +50,15 @@ There are examples in the examples folder. You will need to run the examples/ser
 
 There are also examples of how to use Stockfish.js via Node.js.
 
+#### Next.js Server Actions
+
+For using Stockfish.js with Next.js Server Actions without events, see the comprehensive guide:
+
+- **[Next.js Server Actions Documentation](./NEXTJS_SERVER_ACTIONS.md)** - Complete guide for implementing chess analysis with Server Actions
+- **[Next.js Examples](./examples/nextjs/)** - Ready-to-use components, hooks, and utilities
+
+This approach provides a clean, promise-based API that works perfectly with React Server Components and Server Actions, allowing you to get chess analysis results without dealing with event listeners.
+
 ### Thanks
 
 - <a href="https://github.com/official-stockfish/Stockfish">The Stockfish team</a>

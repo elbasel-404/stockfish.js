@@ -1,0 +1,45 @@
+{
+  "name": "nextjs-stockfish-example",
+  "version": "1.0.0",
+  "description": "Example Next.js project using Stockfish.js with Server Actions",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [
+    "nextjs",
+    "stockfish",
+    "chess",
+    "server-actions",
+    "react"
+  ],
+  "dependencies": {
+    "stockfish": "^17.1.0",
+    "chess.js": "^1.0.0-beta.6",
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "typescript": "^5.0.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.24"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elbasel-404/stockfish.js"
+  },
+  "license": "GPL-3.0"
+}
