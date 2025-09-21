@@ -22,14 +22,15 @@ npm install stockfish
 
 ### 1. Create a Stockfish Utility
 
-First, create a utility module to handle the Stockfish engine:
+First, create a utility module to handle the Stockfish engine. There are two approaches depending on your setup:
+
+#### Option A: Using the npm stockfish package (Recommended)
 
 ```javascript
 // lib/stockfish-utils.js
-const stockfish = require('stockfish');
-
 /**
  * Creates a promise-based wrapper for getting the best move from Stockfish
+ * This uses the npm stockfish package directly
  * @param {string} fen - The FEN string representing the current board position
  * @param {Object} options - Configuration options
  * @param {number} options.depth - Search depth (default: 15)
@@ -47,51 +48,52 @@ export function getBestMove(fen, options = {}) {
 
     let engine;
     let bestMove = null;
-    let isSearching = false;
+    let gotUCI = false;
+    
     const timeout = setTimeout(() => {
       if (engine && engine.terminate) {
         engine.terminate();
       }
       reject(new Error('Stockfish search timeout'));
-    }, timeLimit + 5000); // Add 5s buffer
+    }, timeLimit + 5000);
 
     try {
-      engine = stockfish();
-      
-      engine.onmessage = function(event) {
-        const message = event;
+      // Import stockfish dynamically to work in Server Actions
+      import('stockfish').then(({ default: Stockfish }) => {
+        engine = Stockfish();
         
-        if (message === 'uciok') {
-          // Engine is ready, configure it
-          engine.postMessage(`setoption name Skill Level value ${skillLevel}`);
-          engine.postMessage(`position fen ${fen}`);
-          engine.postMessage(`go depth ${depth} movetime ${timeLimit}`);
-          isSearching = true;
-        } else if (message.startsWith('bestmove')) {
-          // Extract the best move
-          const moveMatch = message.match(/bestmove\s+(\S+)/);
-          if (moveMatch && moveMatch[1] && moveMatch[1] !== '(none)') {
-            bestMove = moveMatch[1];
-          }
+        engine.onmessage = function(line) {
+          if (typeof line !== "string") return;
           
-          clearTimeout(timeout);
-          if (engine && engine.terminate) {
-            engine.terminate();
+          if (!gotUCI && line === "uciok") {
+            gotUCI = true;
+            engine.postMessage(`setoption name Skill Level value ${skillLevel}`);
+            engine.postMessage(`position fen ${fen}`);
+            engine.postMessage(`go depth ${depth} movetime ${timeLimit}`);
+          } else if (line.startsWith('bestmove')) {
+            const moveMatch = line.match(/bestmove\s+(\S+)/);
+            if (moveMatch && moveMatch[1] && moveMatch[1] !== '(none)') {
+              bestMove = moveMatch[1];
+            }
+            
+            clearTimeout(timeout);
+            if (engine && engine.terminate) {
+              engine.terminate();
+            }
+            
+            if (bestMove) {
+              resolve(bestMove);
+            } else {
+              reject(new Error('No valid move found'));
+            }
           }
-          
-          if (bestMove) {
-            resolve(bestMove);
-          } else {
-            reject(new Error('No valid move found'));
-          }
-        } else if (message.includes('info') && message.includes('depth')) {
-          // Optional: You can extract evaluation info here if needed
-          console.log('Search info:', message);
-        }
-      };
+        };
 
-      // Initialize the engine
-      engine.postMessage('uci');
+        engine.postMessage('uci');
+      }).catch(error => {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to load Stockfish: ${error.message}`));
+      });
       
     } catch (error) {
       clearTimeout(timeout);
@@ -118,6 +120,8 @@ export function getBestMoveWithEvaluation(fen, options = {}) {
     let bestMove = null;
     let evaluation = null;
     let searchDepth = 0;
+    let gotUCI = false;
+    
     const timeout = setTimeout(() => {
       if (engine && engine.terminate) {
         engine.terminate();
@@ -126,62 +130,150 @@ export function getBestMoveWithEvaluation(fen, options = {}) {
     }, timeLimit + 5000);
 
     try {
-      engine = stockfish();
-      
-      engine.onmessage = function(event) {
-        const message = event;
+      import('stockfish').then(({ default: Stockfish }) => {
+        engine = Stockfish();
         
-        if (message === 'uciok') {
-          engine.postMessage(`setoption name Skill Level value ${skillLevel}`);
-          engine.postMessage(`position fen ${fen}`);
-          engine.postMessage(`go depth ${depth} movetime ${timeLimit}`);
-        } else if (message.startsWith('info') && message.includes('depth')) {
-          // Parse evaluation information
-          const depthMatch = message.match(/depth\s+(\d+)/);
-          const scoreMatch = message.match(/score\s+(cp|mate)\s+(-?\d+)/);
-          const pvMatch = message.match(/pv\s+(\S+)/);
+        engine.onmessage = function(line) {
+          if (typeof line !== "string") return;
           
-          if (depthMatch) {
-            searchDepth = parseInt(depthMatch[1]);
-          }
-          
-          if (scoreMatch && pvMatch) {
-            bestMove = pvMatch[1];
-            if (scoreMatch[1] === 'cp') {
-              evaluation = parseInt(scoreMatch[2]) / 100; // Convert centipawns to pawns
-            } else if (scoreMatch[1] === 'mate') {
-              evaluation = scoreMatch[2][0] === '-' ? -Infinity : Infinity;
+          if (!gotUCI && line === "uciok") {
+            gotUCI = true;
+            engine.postMessage(`setoption name Skill Level value ${skillLevel}`);
+            engine.postMessage(`position fen ${fen}`);
+            engine.postMessage(`go depth ${depth} movetime ${timeLimit}`);
+          } else if (line.startsWith('info') && line.includes('depth')) {
+            // Parse evaluation information
+            const depthMatch = line.match(/depth\s+(\d+)/);
+            const scoreMatch = line.match(/score\s+(cp|mate)\s+(-?\d+)/);
+            const pvMatch = line.match(/pv\s+(\S+)/);
+            
+            if (depthMatch) {
+              searchDepth = parseInt(depthMatch[1]);
+            }
+            
+            if (scoreMatch && pvMatch) {
+              bestMove = pvMatch[1];
+              if (scoreMatch[1] === 'cp') {
+                evaluation = parseInt(scoreMatch[2]) / 100; // Convert centipawns to pawns
+              } else if (scoreMatch[1] === 'mate') {
+                evaluation = scoreMatch[2][0] === '-' ? -Infinity : Infinity;
+              }
+            }
+          } else if (line.startsWith('bestmove')) {
+            const moveMatch = line.match(/bestmove\s+(\S+)/);
+            if (moveMatch && moveMatch[1] && moveMatch[1] !== '(none)') {
+              bestMove = moveMatch[1];
+            }
+            
+            clearTimeout(timeout);
+            if (engine && engine.terminate) {
+              engine.terminate();
+            }
+            
+            if (bestMove) {
+              resolve({
+                move: bestMove,
+                evaluation: evaluation || 0,
+                depth: searchDepth
+              });
+            } else {
+              reject(new Error('No valid move found'));
             }
           }
-        } else if (message.startsWith('bestmove')) {
-          const moveMatch = message.match(/bestmove\s+(\S+)/);
-          if (moveMatch && moveMatch[1] && moveMatch[1] !== '(none)') {
-            bestMove = moveMatch[1];
-          }
-          
-          clearTimeout(timeout);
-          if (engine && engine.terminate) {
-            engine.terminate();
-          }
-          
-          if (bestMove) {
-            resolve({
-              move: bestMove,
-              evaluation: evaluation || 0,
-              depth: searchDepth
-            });
-          } else {
-            reject(new Error('No valid move found'));
-          }
-        }
-      };
+        };
 
-      engine.postMessage('uci');
+        engine.postMessage('uci');
+      }).catch(error => {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to load Stockfish: ${error.message}`));
+      });
       
     } catch (error) {
       clearTimeout(timeout);
       reject(error);
     }
+  });
+}
+```
+
+#### Option B: Using a local stockfish.js build (Advanced)
+
+If you have a custom build or local version of Stockfish.js, you can use a more complex initialization process. See the complete example in the `examples/nextjs/stockfish-utils.js` file.
+
+#### Utility Functions
+
+Add these helper functions to your utility file:
+
+```javascript
+/**
+ * Validates a FEN string (basic validation)
+ * @param {string} fen - The FEN string to validate
+ * @returns {boolean} True if FEN appears valid
+ */
+export function isValidFEN(fen) {
+  if (!fen || typeof fen !== 'string') return false;
+  
+  const parts = fen.trim().split(' ');
+  if (parts.length !== 6) return false;
+  
+  // Basic piece placement validation
+  const piecePlacement = parts[0];
+  const ranks = piecePlacement.split('/');
+  if (ranks.length !== 8) return false;
+  
+  // Check each rank
+  for (const rank of ranks) {
+    let squares = 0;
+    for (const char of rank) {
+      if ('12345678'.includes(char)) {
+        squares += parseInt(char);
+      } else if ('pnbrqkPNBRQK'.includes(char)) {
+        squares += 1;
+      } else {
+        return false;
+      }
+    }
+    if (squares !== 8) return false;
+  }
+  
+  // Basic validation of other FEN parts
+  const activeColor = parts[1];
+  if (!['w', 'b'].includes(activeColor)) return false;
+  
+  const castling = parts[2];
+  if (!/^(-|[KQkq]+)$/.test(castling)) return false;
+  
+  return true;
+}
+
+/**
+ * Simple in-memory cache for move calculations
+ */
+const moveCache = new Map();
+const MAX_CACHE_SIZE = 1000;
+
+/**
+ * Cached version of getBestMove
+ * @param {string} fen - The FEN string representing the current board position
+ * @param {Object} options - Configuration options
+ * @returns {Promise<string>} The best move in algebraic notation
+ */
+export function getCachedBestMove(fen, options = {}) {
+  const cacheKey = `${fen}-${JSON.stringify(options)}`;
+  
+  if (moveCache.has(cacheKey)) {
+    return Promise.resolve(moveCache.get(cacheKey));
+  }
+  
+  return getBestMove(fen, options).then(move => {
+    // Simple cache size management
+    if (moveCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = moveCache.keys().next().value;
+      moveCache.delete(firstKey);
+    }
+    
+    moveCache.set(cacheKey, move);
+    return move;
   });
 }
 ```
@@ -674,3 +766,44 @@ Server action wrapper for getBestMoveWithEvaluation.
    - Adjust skill level based on intended difficulty
 
 This approach provides a clean, server-side solution for chess analysis without relying on client-side events, making it perfect for Next.js Server Actions.
+
+## Getting Started Quickly
+
+For a complete step-by-step setup guide, see: [examples/nextjs/setup-guide.md](./examples/nextjs/setup-guide.md)
+
+## Key Benefits
+
+✅ **No Event Handling Required**: Pure promise-based API  
+✅ **Server-Side Execution**: Works perfectly with Server Actions  
+✅ **Type Safety**: Full TypeScript support included  
+✅ **Caching Support**: Built-in position caching  
+✅ **Error Handling**: Comprehensive timeout and error management  
+✅ **Configurable**: Adjustable depth, time limits, and skill levels  
+✅ **Production Ready**: Handles edge cases and cleanup properly  
+
+## Example Usage
+
+```javascript
+// In a Server Action
+'use server';
+
+import { getChessBestMove } from '@/app/actions/chess-actions';
+
+export async function analyzeMoves(gameState) {
+  const result = await getChessBestMove(gameState.fen, {
+    depth: 15,
+    timeLimit: 3000
+  });
+  
+  if (result.success) {
+    return { 
+      bestMove: result.move,
+      recommendation: `Consider playing ${result.move}`
+    };
+  }
+  
+  throw new Error(result.error);
+}
+```
+
+This documentation provides everything you need to integrate Stockfish.js with Next.js Server Actions for powerful chess analysis without the complexity of event-driven programming.
